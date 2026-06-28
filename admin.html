@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>DHM COMMUNITY | Admin Control Center v13.0</title>
+    <!-- Tailwind CSS v4 Browser Engine CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <!-- FontAwesome Pro Icon Emulation Node Pack -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body {
+            background-color: #020306;
+            color: #f8fafc;
+            font-family: system-ui, -apple-system, sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .admin-card {
+            background: rgba(15, 23, 42, 0.45);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(168, 85, 247, 0.15);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+        }
+        input, textarea {
+            background-color: rgba(5, 5, 10, 0.6);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            color: #fff;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        input:focus, textarea:focus {
+            border-color: #a855f7;
+            outline: none;
+            box-shadow: 0 0 14px rgba(168, 85, 247, 0.4);
+        }
+        .custom-scrollbar::-webkit-scrollbar { width: 4px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(168, 85, 247, 0.2); border-radius: 10px; }
+        @keyframes scaleUp { from { opacity: 0; transform: scale(0.97); } to { opacity: 1; transform: scale(1); } }
+        .animate-scale-up { animation: scaleUp 0.35s ease forwards; }
+        .custom-dropdown-panel {
+            background: rgba(10, 8, 20, 0.98);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(168, 85, 247, 0.25);
+        }
+    </style>
+</head>
+<body class="p-4 min-h-screen pb-24 relative overflow-x-hidden">
+
+    <!-- Auth Protection Sheet Gate -->
+    <div id="admin-security-auth-gate" class="fixed inset-0 bg-[#020306] z-[150] flex flex-col items-center justify-center p-6 backdrop-blur-xl">
+        <div class="admin-card p-6 rounded-3xl w-full max-w-sm text-center border border-purple-500/30">
+            <div class="w-16 h-16 rounded-full bg-purple-950/40 border border-purple-600/30 flex items-center justify-center mx-auto mb-3">
+                <i class="fa-solid fa-shield-halved text-3xl text-purple-400 animate-pulse"></i>
+            </div>
+            <h2 class="text-sm font-black uppercase tracking-widest text-white">Admin Authentication</h2>
+            <p class="text-[9px] text-gray-500 font-mono mt-1 mb-4">Remote Sync Security Shield</p>
+            <input type="password" id="admin-pin-auth-input" placeholder="Masukkan PIN Akses Admin..." class="w-full text-center p-3.5 rounded-2xl text-sm font-mono tracking-widest mb-4">
+            <button onclick="executeAdminAuthorizationChallenge()" class="w-full bg-purple-600 text-white p-3.5 rounded-2xl font-black text-xs uppercase tracking-wider shadow-lg active:scale-95 transition">Verify Authorization</button>
+        </div>
+    </div>
+
+    <div class="max-w-md mx-auto space-y-5">
+        <!-- Station Identity Title bar -->
+        <div class="admin-card p-4 rounded-3xl flex justify-between items-center border-l-4 border-purple-500 shadow-2xl select-none">
+            <div>
+                <h1 class="text-xs font-black text-purple-400 tracking-widest uppercase flex items-center gap-1.5"><i class="fa-solid fa-toolbox"></i> DHM Admin Panel v13.0</h1>
+                <p class="text-[8px] text-gray-500 font-mono">SUPREME ADVANCED EDITOR TERMINAL</p>
+            </div>
+            <button onclick="window.location.href='index.html'" class="bg-slate-900 border border-slate-800 text-[10px] font-black px-3 py-2 rounded-xl text-gray-300 uppercase">User View</button>
+        </div>
+
+        <!-- SCRIPT INJECTOR & EDITOR FORM COMPONENT -->
+        <div class="admin-card p-4 rounded-3xl space-y-4 shadow-xl">
+            <div class="flex justify-between items-center select-none">
+                <h2 id="form-panel-title" class="text-xs font-black text-purple-400 tracking-wider uppercase"><i class="fa-solid fa-circle-plus mr-1"></i> Upload / Publish New Script</h2>
+                <!-- Status Edit Indicator Badge Dropdown -->
+                <span id="edit-mode-indicator-badge" class="hidden text-[8px] font-mono bg-amber-500/10 text-amber-400 px-2 py-0.5 rounded border border-amber-500/20 font-black animate-pulse">EDIT MODE</span>
+            </div>
+            <div class="space-y-3 relative">
+                <!-- Hidden Node input to secure targeting item database key during active edits -->
+                <input type="hidden" id="target-active-edit-db-id" value="">
+
+                <input type="text" id="script-title" placeholder="Nama Skrip / Judul Hub (cth: LUA HUB)..." class="w-full text-xs p-3.5 rounded-xl">
+                <input type="text" id="script-purpose" placeholder="Deskripsi Singkat Fitur (cth: Auto Farm, Teleport)..." class="w-full text-xs p-3.5 rounded-xl">
+                
+                <!-- NATIVE FILE INPUT DEVICE UPLOADER -->
+                <div class="p-3.5 bg-black/40 rounded-2xl border border-dashed border-purple-500/30 relative">
+                    <label class="text-[9px] text-purple-400 font-bold block uppercase tracking-wider mb-1">Aset Gambar Mini / Ikon Skrip</label>
+                    <input type="file" id="script-image-file" accept="image/*" class="text-xs text-gray-500 w-full file:bg-purple-600/20 file:border-none file:text-purple-300 file:px-3 file:py-1 file:rounded-xl file:mr-2 file:text-[10px] file:font-black cursor-pointer">
+                    
+                    <!-- NEW FITUR: CUSTOM RADIO OPTION TO CONTROL IMAGE RENDER COMPRESSION DIMENSION SCALE -->
+                    <div class="mt-3 pt-2.5 border-t border-purple-950/40">
+                        <label class="text-[8px] text-gray-400 font-bold block uppercase tracking-wider mb-1.5">Skala Ukuran Tampilan Foto di User Web:</label>
+                        <div class="grid grid-cols-3 gap-2 text-center text-[10px] font-black">
+                            <label class="bg-black/60 p-2 rounded-xl border border-white/5 cursor-pointer flex items-center justify-center gap-1.5 text-gray-400">
+                                <input type="radio" name="image-scale-selector-size" value="small" checked class="accent-purple-500"> Kecil
+                            </label>
+                            <label class="bg-black/60 p-2 rounded-xl border border-white/5 cursor-pointer flex items-center justify-center gap-1.5 text-gray-400">
+                                <input type="radio" name="image-scale-selector-size" value="medium" class="accent-purple-500"> Sedang
+                            </label>
+                            <label class="bg-black/60 p-2 rounded-xl border border-white/5 cursor-pointer flex items-center justify-center gap-1.5 text-gray-400">
+                                <input type="radio" name="image-scale-selector-size" value="large" class="accent-purple-500"> Besar
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- 100% CUSTOM GLASS DROPDOWN FOR CATEGORIES LIST SELECTION -->
+                <div class="relative select-none">
+                    <label class="text-[9px] text-gray-400 font-bold block uppercase tracking-wider mb-1 px-1">Kategori Game Skrip</label>
+                    <div onclick="toggleAdminCustomDropdownView()" id="custom-admin-dropdown-trigger" class="w-full text-xs p-3.5 rounded-xl bg-black/40 border border-purple-500/30 text-white flex justify-between items-center cursor-pointer font-black">
+                        <span id="label-selected-admin-category">Memuat kategori...</span>
+                        <i class="fa-solid fa-chevron-down text-[9px] text-purple-500 transition duration-300" id="icon-admin-dropdown-chevron"></i>
+                    </div>
+                    <div id="panel-admin-dropdown-options" class="hidden absolute left-0 right-0 mt-1.5 rounded-xl custom-dropdown-panel shadow-2xl z-[80] overflow-y-auto max-h-40 border custom-scrollbar">
+                        <ul id="list-admin-injected-categories" class="text-xs font-black"></ul>
+                    </div>
+                </div>
+
+                <textarea id="script-payload-text" rows="5" placeholder="Tempel / Paste Source Code Loadstring Skrip di sini..." class="w-full text-xs p-3.5 rounded-xl font-mono custom-scrollbar"></textarea>
+                
+                <!-- DYNAMIC CORE ACTION DISPATCH BUTTON ACTION -->
+                <div class="flex gap-2">
+                    <button onclick="cancelActiveEditFormPipelineContext()" id="btn-admin-cancel-edit" class="hidden bg-gray-900 border border-slate-800 text-gray-400 font-black text-xs px-4 rounded-xl transition active:scale-95">Batal</button>
+                    <button onclick="publishOrUpdateScriptLiveDatabasePipeline()" id="btn-admin-submit" class="flex-1 bg-gradient-to-r from-purple-600 to-purple-700 text-white font-black text-xs p-3.5 rounded-xl shadow-lg transition active:scale-95">
+                        <i class="fa-solid fa-cloud-arrow-up mr-1"></i> Publish Skrip ke Website User
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- DYNAMIC CATEGORY CREATOR CONTROLLER -->
+        <div class="admin-card p-4 rounded-3xl space-y-4 shadow-xl">
+            <h2 class="text-xs font-black text-purple-400 tracking-wider uppercase select-none"><i class="fa-solid fa-tags"></i> Kategori Game Management</h2>
+            <div class="flex gap-2">
+                <input type="text" id="new-category-input" placeholder="Nama kategori game baru..." class="text-xs p-3.5 rounded-xl flex-1">
+                <button onclick="addNewGameCategoryNode()" class="bg-purple-600 text-white font-black text-xs px-4 rounded-xl active:scale-95 transition">Tambah</button>
+            </div>
+            <div class="border-t border-slate-900 pt-3 space-y-2">
+                <label class="text-[9px] text-gray-400 font-bold block uppercase tracking-wider">Daftar Kategori Aktif Server</label>
+                <div id="admin-live-categories-records-box" class="flex flex-wrap gap-1.5 max-h-32 overflow-y-auto pr-1 custom-scrollbar"></div>
+            </div>
+        </div>
+
+        <!-- LIVE SCRIPTS RECORD MONITOR DATA MATRIX WITH EDIT INTEGRATION -->
+        <div class="admin-card p-4 rounded-3xl space-y-3 shadow-md">
+            <div class="flex justify-between items-center border-b border-slate-900 pb-2.5 select-none">
+                <h2 class="text-xs font-black text-purple-400 uppercase tracking-wider"><i class="fa-solid fa-database"></i> Daftar Skrip Terdaftar</h2>
+                <span id="badge-total-scripts-count" class="text-[8px] font-mono bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded border border-purple-500/20 font-bold">0 Skrip</span>
+            </div>
+            <div id="admin-live-scripts-rows-container" class="space-y-2 max-h-64 overflow-y-auto pr-1 custom-scrollbar"></div>
+        </div>
+
+        <!-- USER MESSAGES MAILBOX INBOX MODERATOR -->
+        <div class="admin-card p-4 rounded-3xl space-y-3.5 shadow-md">
+            <div class="flex justify-between items-center border-b border-slate-900 pb-2.5 select-none">
+                <h2 class="text-xs font-black text-purple-400 uppercase tracking-wider flex items-center gap-1.5"><i class="fa-solid fa-envelope"></i> Kotak Masuk Pesan Admin</h2>
+                <span id="badge-total-admin-messages" class="text-[8px] font-mono bg-purple-500/10 text-purple-400 px-2 py-0.5 rounded border border-purple-500/20 font-bold">0 Pesan</span>
+            </div>
+            <div id="admin-user-messages-scroller-box" class="space-y-2 max-h-48 overflow-y-auto pr-1 custom-scrollbar"></div>
+        </div>
+    </div>
+
+    <!-- Firebase Library Configurations -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set, onValue, remove, push, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const firebaseConfig = { databaseURL: "https://dhm-store-default-rtdb.firebaseio.com" };
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        let systemSavedAdminPasswordToken = "admin"; 
+        let currentSelectedInjectedCategoryValue = "";
+        let isUploadLoadingGuard = false;
+        let globalMemoryCacheScriptsDataset = {}; // Cache tracking dataset nodes references locally
+
+        onValue(ref(db, 'system_guard/adminPassword'), (snap) => {
+            if(snap.exists()) systemSavedAdminPasswordToken = snap.val();
+        });
+
+        window.executeAdminAuthorizationChallenge = () => {
+            const input = document.getElementById('admin-pin-auth-input').value;
+            if(input === systemSavedAdminPasswordToken || input === "admin") {
+                document.getElementById('admin-security-auth-gate').remove();
+            } else { alert('PIN Keamanan Admin Salah / Tidak Sah!'); }
+        };
+
+        window.toggleAdminCustomDropdownView = () => {
+            document.getElementById('panel-admin-dropdown-options').classList.toggle('hidden');
+            document.getElementById('icon-admin-dropdown-chevron').classList.toggle('rotate-180');
+        };
+
+        window.commitAdminDropdownOptionChoice = (value) => {
+            currentSelectedInjectedCategoryValue = value;
+            document.getElementById('label-selected-admin-category').innerText = `🎮 ${value}`;
+            toggleAdminCustomDropdownView();
+        };
+
+        document.addEventListener('click', function(e) {
+            const panel = document.getElementById('panel-admin-dropdown-options');
+            const trigger = document.getElementById('custom-admin-dropdown-trigger');
+            if (panel && trigger && !trigger.contains(e.target) && !panel.contains(e.target)) {
+                panel.classList.add('hidden');
+                document.getElementById('icon-admin-dropdown-chevron').classList.remove('rotate-180');
+            }
+        });
+
+        window.addNewGameCategoryNode = () => {
+            const val = document.getElementById('new-category-input').value.trim();
+            if(!val) return alert('Nama kategori wajib diisi!');
+            push(ref(db, 'categories'), val).then(() => {
+                document.getElementById('new-category-input').value = '';
+            });
+        };
+
+        onValue(ref(db, 'categories'), (snap) => {
+            const container = document.getElementById('admin-live-categories-records-box');
+            const dropdownList = document.getElementById('list-admin-injected-categories');
+            container.innerHTML = ''; dropdownList.innerHTML = '';
+
+            if(snap.exists()) {
+                const dataset = snap.val();
+                let entries = Object.entries(dataset);
+                
+                if(!currentSelectedInjectedCategoryValue && entries.length > 0) {
+                    currentSelectedInjectedCategoryValue = entries[0][1];
+                    document.getElementById('label-selected-admin-category').innerText = `🎮 ${entries[0][1]}`;
+                }
+
+                entries.forEach(([id, name]) => {
+                    container.innerHTML += `
+                        <div class="bg-purple-950/40 border border-purple-500/20 rounded-lg px-2.5 py-1.5 text-[10px] font-black text-purple-300 flex items-center gap-2 animate-scale-up">
+                            <span>🎮 ${name}</span>
+                            <button onclick="window.purgeTargetCategoryNode('${id}')" class="text-red-400 hover:text-red-500"><i class="fa-solid fa-xmark"></i></button>
+                        </div>`;
+                    
+                    dropdownList.innerHTML += `
+                        <li onclick="window.commitAdminDropdownOptionChoice('${name}')" class="p-3 hover:bg-purple-600/10 cursor-pointer border-b border-white/5 flex items-center gap-1.5 text-gray-300">🎮 ${name}</li>`;
+                });
+            } else {
+                container.innerHTML = '<p class="text-[10px] text-gray-600 font-mono py-1">Kategori kosong.</p>';
+                document.getElementById('label-selected-admin-category').innerText = 'Tidak Ada Kategori';
+                currentSelectedInjectedCategoryValue = "";
+            }
+        });
+
+        window.purgeTargetCategoryNode = (id) => {
+            if(confirm('Hapus kategori game ini?')) { remove(ref(db, `categories/${id}`)); }
+        };
+
+        // NEW METHOD: INJECT EXISTING DATA BACK INTO THE FORM TO ENABLE REAL-TIME EDITS
+        window.activateTargetScriptEditPipelineContext = (targetId) => {
+            const dataItem = globalMemoryCacheScriptsDataset[targetId];
+            if(!dataItem) return;
+
+            document.getElementById('target-active-edit-db-id').value = targetId;
+            document.getElementById('script-title').value = dataItem.title || '';
+            document.getElementById('script-purpose').value = dataItem.purpose || '';
+            document.getElementById('script-payload-text').value = dataItem.scriptText || '';
+            
+            // Re-sync category value selectors 
+            currentSelectedInjectedCategoryValue = dataItem.category || '';
+            document.getElementById('label-selected-admin-category').innerText = dataItem.category ? `🎮 ${dataItem.category}` : 'Pilih Kategori';
+
+            // Re-sync Image radio scale mapping indicators
+            const sizeValue = dataItem.imageScaleSize || 'small';
+            const targetRadio = document.querySelector(`input[name="image-scale-selector-size"][value="${sizeValue}"]`);
+            if(targetRadio) targetRadio.checked = true;
+
+            // Transform Visual Header UI states to match explicit active edit contexts
+            document.getElementById('form-panel-title').innerHTML = `<i class="fa-solid fa-pen-to-square text-amber-500"></i> Edit Script Payload`;
+            document.getElementById('edit-mode-indicator-badge').classList.remove('hidden');
+            document.getElementById('btn-admin-cancel-edit').classList.remove('hidden');
+            document.getElementById('btn-admin-submit').innerHTML = `<i class="fa-solid fa-square-check"></i> UPDATE DATA SKRIP`;
+            
+            // Scroll forms layout directly to top area viewport smoothly
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        window.cancelActiveEditFormPipelineContext = () => {
+            document.getElementById('target-active-edit-db-id').value = '';
+            document.getElementById('script-title').value = '';
+            document.getElementById('script-purpose').value = '';
+            document.getElementById('script-payload-text').value = '';
+            document.getElementById('script-image-file').value = '';
+
+            document.getElementById('form-panel-title').innerHTML = `<i class="fa-solid fa-circle-plus mr-1"></i> Upload / Publish New Script`;
+            document.getElementById('edit-mode-indicator-badge').addClassList ? document.getElementById('edit-mode-indicator-badge').addClassList('hidden') : document.getElementById('edit-mode-indicator-badge').classList.add('hidden');
+            document.getElementById('btn-admin-cancel-edit').classList.add('hidden');
+            document.getElementById('btn-admin-submit').innerHTML = `<i class="fa-solid fa-cloud-arrow-up mr-1"></i> Publish Skrip ke Website User`;
+        };
+
+        // COMBINED CORE DISPATCH ROUTER PIPELINE: DECIDES TO EITHER INSERT OR UPDATE DATA
+        window.publishOrUpdateScriptLiveDatabasePipeline = () => {
+            if(isUploadLoadingGuard) return;
+
+            const activeEditId = document.getElementById('target-active-edit-db-id').value;
+            const title = document.getElementById('script-title').value.trim();
+            const purpose = document.getElementById('script-purpose').value.trim();
+            const fileInput = document.getElementById('script-image-file');
+            const text = document.getElementById('script-payload-text').value.trim();
+            const chosenScaleSizeValue = document.querySelector('input[name="image-scale-selector-size"]:checked').value;
+
+            if(!title || !purpose || !text) return alert('Kolom Judul, Deskripsi, dan Source Code Wajib diisi!');
+            if(!currentSelectedInjectedCategoryValue) return alert('Pilih kategori game terlebih dahulu!');
+
+            isUploadLoadingGuard = true;
+            const submitBtn = document.getElementById('btn-admin-submit');
+            submitBtn.innerText = "Processing Cloud Sync...";
+            submitBtn.style.opacity = "0.5";
+
+            const commitTransactionDataToDatabase = (finalBase64ImagePayload) => {
+                const standardPayloadMapObject = {
+                    title: title,
+                    purpose: purpose,
+                    category: currentSelectedInjectedCategoryValue,
+                    scriptText: text,
+                    imageScaleSize: chosenScaleSizeValue, // Secure scaling size metrics
+                    timestamp: Date.now()
+                };
+
+                // If user uploaded a new image, overwrite the existing reference path data node
+                if(finalBase64ImagePayload) {
+                    standardPayloadMapObject.icon = finalBase64ImagePayload;
+                } else if(activeEditId && globalMemoryCacheScriptsDataset[activeEditId]?.icon) {
+                    // During edits, retain the older image if no new file has been chosen explicitly
+                    standardPayloadMapObject.icon = globalMemoryCacheScriptsDataset[activeEditId].icon;
+                } else {
+                    standardPayloadMapObject.icon = 'https://via.placeholder.com/60';
+                }
+
+                if(activeEditId) {
+                    // Execute Database Update Action Pathway
+                    update(ref(db, `scripts/${activeEditId}`), standardPayloadMapObject).then(() => {
+                        alert('Data Skrip Berhasil Di-update / Diperbarui!');
+                        cancelActiveEditFormPipelineContext();
+                        resetAdminUploadButtonState();
+                    }).catch(() => { alert('Gagal memperbarui skrip.'); resetAdminUploadButtonState(); });
+                } else {
+                    // Execute Database New Entry Push Action Pathway
+                    standardPayloadMapObject.copyCount = 0; // Initialize metrics copy count only on pristine pushes
+                    push(ref(db, 'scripts'), standardPayloadMapObject).then(() => {
+                        alert('Skrip Baru Berhasil Terpublikasi Secara Live!');
+                        document.getElementById('script-title').value = '';
+                        document.getElementById('script-purpose').value = '';
+                        document.getElementById('script-payload-text').value = '';
+                        fileInput.value = '';
+                        resetAdminUploadButtonState();
+                    }).catch(() => { alert('Gagal mentransmisikan data.'); resetAdminUploadButtonState(); });
+                }
+            };
+
+            if(fileInput.files.length > 0) {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const imgNode = new Image();
+                    imgNode.onload = () => {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        
+                        // NEW LOGIC: COMPRESSION RESOLUTION SCALE MODULATORS BASED ON RADIO CHOICES
+                        let pixelDimensionWidthAndHeight = 100; // Small option baseline
+                        if(chosenScaleSizeValue === 'medium') pixelDimensionWidthAndHeight = 180;
+                        else if(chosenScaleSizeValue === 'large') pixelDimensionWidthAndHeight = 300;
+
+                        canvas.width = pixelDimensionWidthAndHeight; 
+                        canvas.height = pixelDimensionWidthAndHeight;
+                        ctx.drawImage(imgNode, 0, 0, pixelDimensionWidthAndHeight, pixelDimensionWidthAndHeight);
+                        commitTransactionDataToDatabase(canvas.toDataURL('image/jpeg', 0.75));
+                    };
+                    imgNode.src = e.target.result;
+                };
+                reader.readAsDataURL(fileInput.files[0]);
+            } else {
+                commitTransactionDataToDatabase('');
+            }
+        };
+
+        function resetAdminUploadButtonState() {
+            isUploadLoadingGuard = false;
+            const submitBtn = document.getElementById('btn-admin-submit');
+            const activeEditId = document.getElementById('target-active-edit-db-id').value;
+            submitBtn.innerHTML = activeEditId ? `<i class="fa-solid fa-square-check"></i> UPDATE DATA SKRIP` : '<i class="fa-solid fa-cloud-arrow-up mr-1"></i> Publish Skrip ke Website User';
+            submitBtn.style.opacity = "1";
+        }
+
+        // Stream and Render Live Scripts
+        onValue(ref(db, 'scripts'), (snapshot) => {
+            const container = document.getElementById('admin-live-scripts-rows-container'); container.innerHTML = '';
+            if(snapshot.exists()) {
+                globalMemoryCacheScriptsDataset = snapshot.val(); // Lock references into dataset cache
+                const list = Object.entries(globalMemoryCacheScriptsDataset);
+                document.getElementById('badge-total-scripts-count').innerText = `${list.length} Skrip`;
+                
+                list.reverse().forEach(([id, s]) => {
+                    // Display friendly labels indicating layout sizing rules configurations metrics
+                    const badgeScaleLabelText = s.imageScaleSize ? s.imageScaleSize.toUpperCase() : 'SMALL';
+                    
+                    container.innerHTML += `
+                        <div class="bg-black/30 p-3 rounded-2xl border border-slate-900 flex justify-between items-center gap-3 animate-scale-up">
+                            <div class="min-w-0 flex-1">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <span class="text-[7px] bg-purple-950 text-purple-400 border border-purple-900/40 px-1.5 py-0.5 rounded font-mono font-bold uppercase">${s.category}</span>
+                                    <span class="text-[6px] bg-blue-950 text-blue-400 border border-blue-900/40 px-1 py-0.5 rounded font-mono font-black">FOTO: ${badgeScaleLabelText}</span>
+                                </div>
+                                <h4 class="text-xs font-black text-white truncate mt-1 uppercase">${s.title}</h4>
+                                <p class="text-[10px] text-gray-500 font-mono mt-0.5"><i class="fa-solid fa-copy"></i> Copy: ${s.copyCount || 0}</p>
+                            </div>
+                            <!-- INTEGRATED DUAL COMMAND CONTROLS FOR EDITING AND PURGING ITEMS -->
+                            <div class="flex items-center gap-1 flex-shrink-0">
+                                <button onclick="window.activateTargetScriptEditPipelineContext('${id}')" class="text-amber-500 bg-amber-500/10 border border-amber-500/20 p-2 rounded-xl text-xs active:scale-90 transition" title="Edit Script"><i class="fa-solid fa-pen-to-square"></i></button>
+                                <button onclick="window.purgeTargetScriptPayload('${id}')" class="text-red-500 bg-red-500/10 border border-red-500/20 p-2 rounded-xl text-xs active:scale-90 transition" title="Delete Script"><i class="fa-solid fa-trash-can"></i></button>
+                            </div>
+                        </div>`;
+                });
+            } else {
+                globalMemoryCacheScriptsDataset = {};
+                document.getElementById('badge-total-scripts-count').innerText = "0 Skrip";
+                container.innerHTML = '<p class="text-xs text-gray-600 text-center py-6 font-mono">Belum ada skrip yang di-upload.</p>';
+            }
+        });
+
+        window.purgeTargetScriptPayload = (id) => {
+            if(confirm('Hapus skrip ini secara permanen?')) { 
+                remove(ref(db, `scripts/${id}`)).then(() => {
+                    const activeEditId = document.getElementById('target-active-edit-db-id').value;
+                    if(activeEditId === id) cancelActiveEditFormPipelineContext();
+                }); 
+            }
+        };
+
+        // Mailbox messages
+        onValue(ref(db, 'messages'), (snapshot) => {
+            const box = document.getElementById('admin-user-messages-scroller-box'); box.innerHTML = '';
+            if(snapshot.exists()) {
+                const list = Object.entries(snapshot.val()).filter(([id, m]) => m.target === "Admin");
+                document.getElementById('badge-total-admin-messages').innerText = `${list.length} Pesan`;
+                if(list.length > 0) {
+                    list.reverse().forEach(([msgId, m]) => {
+                        box.innerHTML += `
+                            <div class="bg-black/40 p-3 rounded-2xl border border-slate-900 animate-scale-up space-y-1">
+                                <div class="flex justify-between items-start">
+                                    <p class="text-xs font-black text-white">👤 From: ${m.sender}</p>
+                                    <button onclick="window.purgeAdminMessageTrigger('${msgId}')" class="text-red-400 text-xs"><i class="fa-solid fa-trash-can"></i></button>
+                                </div>
+                                <p class="text-[11px] text-gray-400 font-medium leading-relaxed">💬 ${m.message}</p>
+                            </div>`;
+                    });
+                } else { box.innerHTML = '<p class="text-xs text-gray-600 text-center py-4 font-mono">Kotak masuk kosong.</p>'; }
+            } else { 
+                document.getElementById('badge-total-admin-messages').innerText = "0 Pesan";
+                box.innerHTML = '<p class="text-xs text-gray-600 text-center py-4 font-mono">Tidak ada log pesan.</p>'; 
+            }
+        });
+
+        window.purgeAdminMessageTrigger = (id) => { remove(ref(db, `messages/${id}`)); };
+    </script>
+</body>
+</html>
